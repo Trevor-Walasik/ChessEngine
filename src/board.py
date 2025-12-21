@@ -20,7 +20,6 @@ rev_move_map = {
     "h":7
 }
 
-
 class Board:
     # Initialize Board object with fresh game state
     def __init__(self):
@@ -52,9 +51,13 @@ class Board:
                 if self.white_to_play:
                     if self.game_state[i][j] == "wp":
                         self.calculate_pawn_moves(i, j)
+                    if self.game_state[i][j] == "wr":
+                        self.calculate_rook_moves(i, j)
                 else:
                     if self.game_state[i][j] == "bp":
                         self.calculate_pawn_moves(i, j)
+                    if self.game_state[i][j] == "br":
+                        self.calculate_rook_moves(i, j)
         
         self.add_pawn_promotion()
         self.check_moves()
@@ -137,6 +140,135 @@ class Board:
                 if self.prev_move[1] == "4" and j + 1 < 8 and \
                    rev_move_map[self.prev_move[0]] == j + 1:
                     self.moves.add(f"{move_map[j]}x{move_map[j + 1]}{i}")
+
+    def calculate_rook_moves(self, i, j):
+        new_move = ""
+        for new_i in range(i + 1, 8):
+            if self.game_state[new_i][j]:
+                if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
+                    self.game_state[new_i][j][0] == "w" and not self.white_to_play:
+                    new_move = f"Rx{move_map[j]}{new_i + 1}"
+                else:
+                    break
+
+            else:
+                new_move = f"R{move_map[j]}{new_i + 1}"
+
+            if self.check_for_horz_ambig(new_i, j) and self.check_for_vert_ambig(new_i, j):
+                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
+            elif self.check_for_horz_ambig(new_i, j):
+                new_move = "R" + f"{move_map[j]}" + new_move[1:]
+            elif self.check_for_vert_ambig(new_i, j):
+                new_move = "R" + f"{i + 1}" + new_move[1:]
+
+            self.moves.add(new_move)
+
+            if new_move[1] == "x":
+                break
+
+        for new_i in range(i - 1, -1, -1):
+            if self.game_state[new_i][j]:
+                if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
+                    self.game_state[new_i][j][0] == "w" and not self.white_to_play:
+                    new_move = f"Rx{move_map[j]}{new_i + 1}"
+                else:
+                    break
+
+            else:
+                new_move = f"R{move_map[j]}{new_i + 1}"
+
+            if self.check_for_horz_ambig(new_i, j) and self.check_for_vert_ambig(new_i, j):
+                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
+            elif self.check_for_horz_ambig(new_i, j):
+                new_move = "R" + f"{move_map[j]}" + new_move[1:]
+            elif self.check_for_vert_ambig(new_i, j):
+                new_move = "R" + f"{i + 1}" + new_move[1:]
+
+            self.moves.add(new_move)
+
+            if new_move[1] == "x":
+                break
+
+        for new_j in range(j + 1, 8):
+            if self.game_state[i][new_j]:
+                if self.game_state[i][new_j][0] == "b" and self.white_to_play or \
+                self.game_state[i][new_j][0] == "w" and not self.white_to_play:
+                    new_move = f"Rx{move_map[new_j]}{i + 1}"
+                else:
+                    break
+            else:
+                new_move = f"R{move_map[new_j]}{i + 1}"
+
+            if self.check_for_horz_ambig(i, new_j) and self.check_for_vert_ambig(i, new_j):
+                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
+            elif self.check_for_horz_ambig(i, new_j):
+                new_move = "R" + f"{move_map[j]}" + new_move[1:]
+            elif self.check_for_vert_ambig(i, new_j):
+                new_move = "R" + f"{i + 1}" + new_move[1:]
+
+            self.moves.add(new_move)
+
+            if new_move[1] == "x":
+                break
+
+        for new_j in range(j - 1, -1, -1):
+            if self.game_state[i][new_j]:
+                if self.game_state[i][new_j][0] == "b" and self.white_to_play or \
+                self.game_state[i][new_j][0] == "w" and not self.white_to_play:
+                    new_move = f"Rx{move_map[new_j]}{i + 1}"
+                else:
+                    break
+            else:
+                new_move = f"R{move_map[new_j]}{i + 1}"
+
+            if self.check_for_horz_ambig(i, new_j) and self.check_for_vert_ambig(i, new_j):
+                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
+            elif self.check_for_horz_ambig(i, new_j):
+                new_move = "R" + f"{move_map[j]}" + new_move[1:]
+            elif self.check_for_vert_ambig(i, new_j):
+                new_move = "R" + f"{i + 1}" + new_move[1:]
+
+            self.moves.add(new_move)
+
+            if new_move[1] == "x":
+                break
+
+    def check_for_vert_ambig(self, i, j):
+        a1 = ""
+        a2 = ""
+        for new_i in range(i + 1, 8):
+            if self.game_state[new_i][j]:
+                a1 = self.game_state[new_i][j]
+                break
+
+        for new_i in range(i - 1, -1, -1):
+            if self.game_state[new_i][j]:
+                a2 = self.game_state[new_i][j]
+                break
+
+        if a1 == a2 and (a1 == "wr" or a1 == "br"):
+            return True
+        else:
+            return False
+
+    def check_for_horz_ambig(self, i, j):
+        a1 = ""
+        a2 = ""
+        for new_j in range(j + 1, 8):
+            if self.game_state[i][new_j]:
+                a1 = self.game_state[i][new_j]
+                break
+
+        for new_j in range(j - 1, -1, -1):
+            if self.game_state[i][new_j]:
+                a2 = self.game_state[i][new_j]
+                break
+
+        if a1 == a2 and (a1 == "wr" or a1 == "br"):
+            return True        
+        else:
+            return False
+
 
     def make_move(self, move):
         if move in self.moves:
