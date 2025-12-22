@@ -269,11 +269,14 @@ class Board:
         else:
             return False
 
-
     def make_move(self, move):
         if move in self.moves:
             if move[0] in rev_move_map:
                 self.make_pawn_move(move)
+            
+            elif move[0] == "R":
+                self.make_rook_move(move)
+
             self.prev_move = move
             return True
         else:
@@ -335,6 +338,40 @@ class Board:
                     self.game_state[new_i + 1][new_j] = ""
                     self.game_state[new_i + 1][prev_j] = ""
 
+    def make_rook_move(self, move):
+        if self.white_to_play:
+            new_i = int(move[-1]) - 1
+            new_j = rev_move_map[(move[-2])]
+            self.game_state[new_i][new_j] = "wr"
+            prev_i, prev_j = self.find_old_rook(move)
+            self.game_state[prev_i][prev_j] = ""
+            
+        else:
+            new_i = int(move[-1]) - 1
+            new_j = rev_move_map[(move[-2])]
+            self.game_state[new_i][new_j] = "br"
+            prev_i, prev_j = self.find_old_rook(move)
+            self.game_state[prev_i][prev_j] = ""
+
+    def find_old_rook(self, move):
+        i = int(move[-1]) - 1
+        j = rev_move_map[(move[-2])]
+        rook_locs = {"wr":[], "br":[]}
+        for old_i in range(i + 1, 8):
+            if self.game_state[old_i][j] and self.game_state[old_i][j] == "wr":
+                rook_locs["wr"] = rook_locs["wr"].append((i, j))
+            elif  self.game_state[old_i][j] and self.game_state[old_i][j] == "br":
+                rook_locs["br"] = rook_locs["br"].append((i, j))
+            elif self.game_state[old_i][j]:
+                break
+        for old_i in range(i - 1, -1, -1):
+            if self.game_state[old_i][j] and self.game_state[old_i][j] == "wr":
+                rook_locs["wr"] = rook_locs["wr"].append((i, j))
+            elif  self.game_state[old_i][j] and self.game_state[old_i][j] == "br":
+                rook_locs["br"] = rook_locs["br"].append((i, j))
+            elif self.game_state[old_i][j]:
+                break
+       
     def print_moves(self):
         print(self.moves)
 
