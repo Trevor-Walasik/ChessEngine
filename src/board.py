@@ -1,3 +1,5 @@
+import copy
+
 move_map = {
     0:"a",
     1:"b",
@@ -32,7 +34,7 @@ class Board:
         self.score = 0
 
         self.game_state = [
-            ["wr", "wn", "wb", "wq", "wk", "wb", "wk", "wr"],
+            ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["", "", "", "", "", "", "", ""],
             ["", "", "", "", "", "", "", ""],
@@ -42,8 +44,13 @@ class Board:
             ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
         ]
 
-    # Update and return self.moves set with all legal moves from current position
     def legal_moves(self):
+        self.potential_moves()
+        self.check_legality()
+        self.add_checks()
+
+    # Update and return self.moves set with all legal moves from current position
+    def potential_moves(self):
         self.moves = dict()
 
         for i in range(8):
@@ -80,7 +87,6 @@ class Board:
                     self.calculate_castles(7, 4)
         
         self.add_pawn_promotion()
-        self.check_moves()
 
     def add_pawn_promotion(self):
         new_moves = dict()
@@ -108,9 +114,62 @@ class Board:
         for move in moves_to_remove:
             del self.moves[move]
 
-    # If any move results in opposing side having a king captures move, move is illegal, this function removes
-    def check_moves(self):
-        pass
+    # Check which moves result in a poition in which opposing side could capture king and remove 
+    def check_legality(self):
+        moves_to_del = set()
+
+        for move in self.moves:
+            temp_board = copy.deepcopy(self)
+            temp_board.make_move(move)
+            temp_board.white_to_play = not temp_board.white_to_play
+
+            for i in range(8):
+                for j in range(8):
+                    if self.white_to_play and temp_board.game_state[i][j] == "wk":
+                        king_i, king_j = i, j
+                    if not self.white_to_play and temp_board.game_state[i][j] == "bk":
+                        king_i, king_j = i, j
+
+            temp_board.potential_moves()
+
+            for pot_move in temp_board.moves:
+                if len(pot_move) > 2 and pot_move[-3:] == f"x{move_map[king_j]}{king_i + 1}":
+                    moves_to_del.add(move)
+                    break
+
+        for move in moves_to_del:
+            del self.moves[move]
+
+    # See which moves result in checks and add + if they do
+    def add_checks(self):
+        changes = {}
+        for i in range(8):
+            for j in range(8):
+                if self.white_to_play and self.game_state[i][j] == "bk":
+                    king_i, king_j = i, j
+                if not self.white_to_play and self.game_state[i][j] == "wk":
+                    king_i, king_j = i, j
+
+        for move in self.moves:
+            temp_board = copy.deepcopy(self)
+            temp_board.make_move(move)
+            temp_board.potential_moves()
+            for pot_move in temp_board.moves:
+                if len(pot_move) > 2 and pot_move[-3:] == f"x{move_map[king_j]}{king_i + 1}":
+                    temp_board.white_to_play = not temp_board.white_to_play
+                    temp_board.potential_moves()
+                    temp_board.legal_moves()
+                    
+                    if temp_board.moves:
+                        changes[move] = move + "+"
+                    else:
+                        changes[move] = move + "#" 
+
+                    break
+
+        for key, value in changes.items():
+            self.moves[value] = self.moves[key]
+            del self.moves[key]    
 
     def calculate_pawn_moves(self, i, j):
         if self.white_to_play:
@@ -179,7 +238,7 @@ class Board:
             if self.game_state[new_i][j]:
                 if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
                     self.game_state[new_i][j][0] == "w" and not self.white_to_play:
-                    self.moves[f"R{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"]
+                    self.moves[f"R{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"] = (i, j)
                 break
             else:
                 self.moves[f"R{self.find_rook_ambig(i, j, new_i, j)}{move_map[j]}{new_i + 1}"] = (i, j)
@@ -434,7 +493,7 @@ class Board:
             if self.game_state[new_i][j]:
                 if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
                     self.game_state[new_i][j][0] == "w" and not self.white_to_play:
-                    self.moves[f"Q{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"]
+                    self.moves[f"Q{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"] = (i, j)
                 break
             else:
                 self.moves[f"Q{self.find_rook_ambig(i, j, new_i, j)}{move_map[j]}{new_i + 1}"] = (i, j)
@@ -736,6 +795,7 @@ class Board:
 
     def make_move(self, move):
         if move in self.moves:
+
             if move[0] in rev_move_map:
                 self.make_pawn_move(move)
             elif move[0] == "R":
@@ -757,6 +817,10 @@ class Board:
             return False
         
     def make_pawn_move(self, move):
+        if move[-1] in "+#":
+            move_copy = move[:-1]
+        else:
+            move_copy = move
         '''pawn move'''
         if move[1] != 'x':
             '''pawn advance'''
@@ -764,7 +828,7 @@ class Board:
             new_i = int(move[1]) - 1
             if self.white_to_play:
                 if move[-2] == "=":
-                    self.game_state[new_i][new_j] = f"w{move[-1].lower()}"
+                    self.game_state[new_i][new_j] = f"w{move_copy[-1].lower()}"
                     self.game_state[new_i - 1][new_j] = ""
                 else:
                     self.game_state[new_i][new_j] = "wp"
@@ -774,7 +838,7 @@ class Board:
                         self.game_state[new_i - 2][new_j] = ""
             else:
                 if move[-2] == "=":
-                    self.game_state[new_i][new_j] = f"b{move[-1].lower()}"
+                    self.game_state[new_i][new_j] = f"b{move_copy[-1].lower()}"
                     self.game_state[new_i + 1][new_j] = ""
                 else:
                     self.game_state[new_i][new_j] = "bp"
@@ -789,8 +853,8 @@ class Board:
             new_i = int(move[3]) - 1
             if self.white_to_play:
                 if self.game_state[new_i][new_j]:
-                    if move[-2] == "=":
-                        self.game_state[new_i][new_j] = f"w{move[-1].lower()}"
+                    if move_copy[-2] == "=":
+                        self.game_state[new_i][new_j] = f"w{move_copy[-1].lower()}"
                         self.game_state[new_i - 1][prev_j] = ""
                     else:
                         self.game_state[new_i][new_j] = "wp"
@@ -801,8 +865,8 @@ class Board:
                     self.game_state[new_i - 1][prev_j] = ""
             else:
                 if self.game_state[new_i][new_j]:
-                    if move[-2] == "=":
-                        self.game_state[new_i][new_j] = f"b{move[-1].lower()}"
+                    if move_copy[-2] == "=":
+                        self.game_state[new_i][new_j] = f"b{move_copy[-1].lower()}"
                         self.game_state[new_i + 1][prev_j] = ""
                     else:
                         self.game_state[new_i][new_j] = "bp"
@@ -813,6 +877,10 @@ class Board:
                     self.game_state[new_i + 1][prev_j] = ""
 
     def make_rook_move(self, move):
+        if move[-1] in "+#":
+            move = move[:-1]
+        else:
+            move_copy = move
         i, j = self.moves[move]
         new_i = int(move[-1]) - 1
         new_j = rev_move_map[move[-2]]
@@ -832,9 +900,13 @@ class Board:
             self.black_castle_short_rights = False
 
     def make_king_move(self, move):
+        if move[-1] in "+#":
+            move_copy = move[:-1]
+        else:
+            move_copy = move
         i, j = self.moves[move]
-        new_i = int(move[-1]) - 1
-        new_j = rev_move_map[move[-2]]
+        new_i = int(move_copy[-1]) - 1
+        new_j = rev_move_map[move_copy[-2]]
         self.game_state[i][j] = ""
         if self.white_to_play:
             self.game_state[new_i][new_j] = "wk"
@@ -846,9 +918,13 @@ class Board:
             self.black_castle_short_rights = False
 
     def make_bishop_move(self, move):
+        if move[-1] in "+#":
+            move_copy = move[:-1]
+        else:
+            move_copy = move
         i, j = self.moves[move]
-        new_i = int(move[-1]) - 1
-        new_j = rev_move_map[move[-2]]
+        new_i = int(move_copy[-1]) - 1
+        new_j = rev_move_map[move_copy[-2]]
         self.game_state[i][j] = ""
         if self.white_to_play:
             self.game_state[new_i][new_j] = "wb"
@@ -856,9 +932,13 @@ class Board:
             self.game_state[new_i][new_j] = "bb"
 
     def make_knight_move(self, move):
+        if move[-1] in "+#":
+            move_copy = move[:-1]
+        else:
+            move_copy = move
         i, j = self.moves[move]
-        new_i = int(move[-1]) - 1
-        new_j = rev_move_map[move[-2]]
+        new_i = int(move_copy[-1]) - 1
+        new_j = rev_move_map[move_copy[-2]]
         self.game_state[i][j] = ""
         if self.white_to_play:
             self.game_state[new_i][new_j] = "wn"
@@ -866,9 +946,13 @@ class Board:
             self.game_state[new_i][new_j] = "bn"
 
     def make_queen_move(self, move):
+        if move[-1] in "+#":
+            move_copy = move[:-1]
+        else:
+            move_copy = move
         i, j = self.moves[move]
-        new_i = int(move[-1]) - 1
-        new_j = rev_move_map[move[-2]]
+        new_i = int(move_copy[-1]) - 1
+        new_j = rev_move_map[move_copy[-2]]
         self.game_state[i][j] = ""
         if self.white_to_play:
             self.game_state[new_i][new_j] = "wq"
@@ -876,29 +960,26 @@ class Board:
             self.game_state[new_i][new_j] = "bq"
 
     def make_castle(self, move):
-        print(1)
+        if move[-1] in "+#":
+            move = move[:-1]
         if len(move) == 3:
             if self.white_to_play:
-                print(1)
                 self.game_state[0][6] = "wk"
                 self.game_state[0][5] = "wr"
                 self.game_state[0][4] = ""
                 self.game_state[0][7] = ""
             else:
-                print(2)
                 self.game_state[7][6] = "bk"
                 self.game_state[7][5] = "br"
                 self.game_state[7][4] = ""
                 self.game_state[7][7] = ""
         else:
             if self.white_to_play:
-                print(3)
                 self.game_state[0][2] = "wk"
                 self.game_state[0][3] = "wr"
                 self.game_state[0][4] = ""
                 self.game_state[0][0] = ""
             else:
-                print(4)
                 self.game_state[7][2] = "bk"
                 self.game_state[7][3] = "br"
                 self.game_state[7][4] = ""
