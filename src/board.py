@@ -59,6 +59,8 @@ class Board:
                         self.calculate_bishop_moves(i, j)
                     if self.game_state[i][j] == "wn":
                         self.calculate_knight_moves(i, j)
+                    if self.game_state[i][j] == "wq":
+                        self.calculate_queen_moves(i, j)
                 else:
                     if self.game_state[i][j] == "bp":
                         self.calculate_pawn_moves(i, j)
@@ -70,6 +72,8 @@ class Board:
                         self.calculate_bishop_moves(i, j)
                     if self.game_state[i][j] == "bn":
                         self.calculate_knight_moves(i, j)
+                    if self.game_state[i][j] == "bq":
+                        self.calculate_queen_moves(i, j)
         
         self.add_pawn_promotion()
         self.check_moves()
@@ -412,6 +416,95 @@ class Board:
             else:
                 self.moves[f"N{self.find_knight_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
 
+    def calculate_queen_moves(self, i, j):
+        for new_i in range(i + 1, 8):
+            if self.game_state[new_i][j]:
+                if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
+                    self.game_state[new_i][j][0] == "w" and not self.white_to_play:
+                    self.moves[f"Q{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"Q{self.find_rook_ambig(i, j, new_i, j)}{move_map[j]}{new_i + 1}"] = (i, j)
+
+        for new_i in range(i - 1, -1, -1):
+            if self.game_state[new_i][j]:
+                if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
+                    self.game_state[new_i][j][0] == "w" and not self.white_to_play:
+                    self.moves[f"Q{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"]
+                break
+            else:
+                self.moves[f"Q{self.find_rook_ambig(i, j, new_i, j)}{move_map[j]}{new_i + 1}"] = (i, j)
+
+        for new_j in range(j + 1, 8):
+            if self.game_state[i][new_j]:
+                if self.game_state[i][new_j][0] == "b" and self.white_to_play or \
+                self.game_state[i][new_j][0] == "w" and not self.white_to_play:
+                    self.moves[f"Q{self.find_rook_ambig(i, j, i, new_j)}x{move_map[new_j]}{i + 1}"] = (i, j)  
+                break
+            else:
+                self.moves[f"Q{self.find_rook_ambig(i, j, i, new_j)}{move_map[new_j]}{i + 1}"] = (i, j)
+
+        for new_j in range(j - 1, -1, -1):
+            if self.game_state[i][new_j]:
+                if self.game_state[i][new_j][0] == "b" and self.white_to_play or \
+                self.game_state[i][new_j][0] == "w" and not self.white_to_play:
+                    self.moves[f"Q{self.find_rook_ambig(i, j, i, new_j)}x{move_map[new_j]}{i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"Q{self.find_rook_ambig(i, j, i, new_j)}{move_map[new_j]}{i + 1}"] = (i, j)
+
+        new_i = i + 1
+        new_j = j + 1
+        while new_i < 8 and new_j < 8:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i += 1
+                new_j += 1
+
+        new_i = i + 1
+        new_j = j - 1
+        while new_i < 8 and new_j > -1:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i += 1
+                new_j -= 1
+
+        new_i = i - 1
+        new_j = j + 1
+        while new_i > -1 and new_j < 8:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i -= 1
+                new_j += 1
+
+        new_i = i - 1
+        new_j = j - 1
+        while new_i > -1 and new_j > -1:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"Q{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i -= 1
+                new_j -= 1
+
     def find_rook_ambig(self, orig_i, orig_j, new_i, new_j):
         pieces_attacking_new = set()
         for i in range(new_i + 1, 8):
@@ -599,6 +692,30 @@ class Board:
         else:
             return ""
 
+    def find_queen_ambig(self, orig_i, orig_j, new_i, new_j):
+        diag = self.find_bishop_ambig(orig_i, orig_j, new_i, new_j)
+        lat = self.find_rook_ambig(orig_i, orig_j, new_i, new_j)
+        if len(diag) == 2:
+            return diag
+        elif len(lat) == 2:
+            return lat
+        elif len(diag) == 1 and not lat:
+            return diag
+        elif len(lat) == 1 and not diag:
+            return lat
+        elif len(lat) == 1 and len(diag) == 1:
+            if lat.isalpha() and diag.isalpha():
+                return lat
+            elif lat.isnumeric() and diag.isnumeric():
+                return lat
+            else:
+                if lat.isalpha():
+                    return lat + diag
+                else:
+                    return diag + lat
+        else:
+            return ""
+
     def make_move(self, move):
         if move in self.moves:
             if move[0] in rev_move_map:
@@ -611,6 +728,8 @@ class Board:
                 self.make_bishop_move(move)
             elif move[0] == "N":
                 self.make_knight_move(move)
+            elif move[0] == "Q":
+                self.make_queen_move(move)
 
             self.prev_move = move
             return True
@@ -712,6 +831,16 @@ class Board:
             self.game_state[new_i][new_j] = "wn"
         else:
             self.game_state[new_i][new_j] = "bn"
+
+    def make_queen_move(self, move):
+        i, j = self.moves[move]
+        new_i = int(move[-1]) - 1
+        new_j = rev_move_map[move[-2]]
+        self.game_state[i][j] = ""
+        if self.white_to_play:
+            self.game_state[new_i][new_j] = "wq"
+        else:
+            self.game_state[new_i][new_j] = "bq"
 
     def print_moves(self):
         print(self.moves.keys())
