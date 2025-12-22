@@ -44,7 +44,7 @@ class Board:
 
     # Update and return self.moves set with all legal moves from current position
     def legal_moves(self):
-        self.moves = set()
+        self.moves = dict()
 
         for i in range(8):
             for j in range(8):
@@ -63,26 +63,30 @@ class Board:
         self.check_moves()
 
     def add_pawn_promotion(self):
-        new_moves = set()
+        new_moves = dict()
         moves_to_remove = set()
         for move in self.moves:
+            i, j = self.moves[move]
             if self.white_to_play:
                 if move[0] in rev_move_map and move[-1] == "8":
-                    new_moves.add(move + "=N")
-                    new_moves.add(move + "=B")
-                    new_moves.add(move + "=R")
-                    new_moves.add(move + "=Q") 
+                    new_moves[move + "=N"] = (i, j)
+                    new_moves[move + "=B"] = (i, j)
+                    new_moves[move + "=R"] = (i, j)
+                    new_moves[move + "=Q"] = (i, j) 
                     moves_to_remove.add(move)
             else: 
                 if move[0] in rev_move_map and move[-1] == "1":
-                    new_moves.add(move + "=N")
-                    new_moves.add(move + "=B")
-                    new_moves.add(move + "=R")
-                    new_moves.add(move + "=Q") 
+                    new_moves[move + "=N"] = (i, j)
+                    new_moves[move + "=B"] = (i, j)
+                    new_moves[move + "=R"] = (i, j)
+                    new_moves[move + "=Q"] = (i, j) 
                     moves_to_remove.add(move)
 
-        self.moves = self.moves | new_moves
-        self.moves = self.moves - moves_to_remove
+        for key, value in new_moves.items():
+            self.moves[key] = value
+            
+        for move in moves_to_remove:
+            del self.moves[move]
 
     # If any move results in opposing side having a king captures move, move is illegal, this function removes
     def check_moves(self):
@@ -92,54 +96,54 @@ class Board:
         if self.white_to_play:
             if i == 1:
                 if not self.game_state[i + 1][j] and not self.game_state[i + 2][j]:
-                    self.moves.add(f"{move_map[j]}{i + 2}")
-                    self.moves.add(f"{move_map[j]}{i + 3}")
+                    self.moves[f"{move_map[j]}{i + 2}"] = (i, j)
+                    self.moves[f"{move_map[j]}{i + 3}"] = (i, j)
             else:
                 if i + 1 < 8 and not self.game_state[i + 1][j]:
-                    self.moves.add(f"{move_map[j]}{i + 2}")
+                    self.moves[f"{move_map[j]}{i + 2}"] = (i, j)
             
             if i + 1 < 8 and j + 1 < 8 and \
                self.game_state[i + 1][j + 1] and self.game_state[i + 1][j + 1][0] == "b":
-                self.moves.add(f"{move_map[j]}x{move_map[j + 1]}{i + 2}")
+                self.moves[f"{move_map[j]}x{move_map[j + 1]}{i + 2}"] = (i, j)
 
             if i + 1 < 8 and j - 1 > -1 and \
                self.game_state[i + 1][j - 1] and self.game_state[i + 1][j - 1][0] == "b":
-                self.moves.add(f"{move_map[j]}x{move_map[j - 1]}{i + 2}")
+                self.moves[f"{move_map[j]}x{move_map[j - 1]}{i + 2}"] = (i, j)
             
             if i == 4:
                 if self.prev_move[1] == "5" and j - 1 > -1 and \
                    rev_move_map[self.prev_move[0]] == j - 1:
-                    self.moves.add(f"{move_map[j]}x{move_map[j - 1]}{i + 2}")
+                    self.moves[f"{move_map[j]}x{move_map[j - 1]}{i + 2}"] = (i, j)
 
                 if self.prev_move[1] == "5" and j + 1 < 8 and \
                    rev_move_map[self.prev_move[0]] == j + 1:
-                    self.moves.add(f"{move_map[j]}x{move_map[j + 1]}{i + 2}")
+                    self.moves[f"{move_map[j]}x{move_map[j + 1]}{i + 2}"] = (i, j)
                     
         else:
             if i == 6:
                 if not self.game_state[i - 1][j] and not self.game_state[i - 2][j]:
-                    self.moves.add(f"{move_map[j]}{i}")
-                    self.moves.add(f"{move_map[j]}{i - 1}")
+                    self.moves[f"{move_map[j]}{i}"] = (i, j)
+                    self.moves[f"{move_map[j]}{i - 1}"] = (i, j)
             else:
                 if i - 1 > -1 and not self.game_state[i - 1][j]:
-                    self.moves.add(f"{move_map[j]}{i}")
+                    self.moves[f"{move_map[j]}{i}"] = (i, j)
 
             if i - 1 > -1 and j + 1 < 8 and \
                self.game_state[i - 1][j + 1] and self.game_state[i - 1][j + 1][0] == "w":
-                self.moves.add(f"{move_map[j]}x{move_map[j + 1]}{i}")
+                self.moves[f"{move_map[j]}x{move_map[j + 1]}{i}"] = (i, j)
 
             if i - 1 > -1 and j - 1 > -1 and \
                self.game_state[i - 1][j - 1] and self.game_state[i - 1][j - 1][0] == "w":
-                self.moves.add(f"{move_map[j]}x{move_map[j - 1]}{i}")
+                self.moves[f"{move_map[j]}x{move_map[j - 1]}{i}"] = (i, j)
 
             if i == 3:
                 if self.prev_move[1] == "4" and j - 1 > -1 and \
                    rev_move_map[self.prev_move[0]] == j - 1:
-                    self.moves.add(f"{move_map[j]}x{move_map[j - 1]}{i}")
+                    self.moves[f"{move_map[j]}x{move_map[j - 1]}{i}"] = (i, j)
 
                 if self.prev_move[1] == "4" and j + 1 < 8 and \
                    rev_move_map[self.prev_move[0]] == j + 1:
-                    self.moves.add(f"{move_map[j]}x{move_map[j + 1]}{i}")
+                    self.moves[f"{move_map[j]}x{move_map[j + 1]}{i}"] = (i, j)
 
     def calculate_rook_moves(self, i, j):
         new_move = ""
@@ -161,7 +165,7 @@ class Board:
             elif self.check_for_vert_ambig(new_i, j):
                 new_move = "R" + f"{i + 1}" + new_move[1:]
 
-            self.moves.add(new_move)
+            self.moves[new_move] = (i, j)
 
             if new_move[1] == "x":
                 break
@@ -184,7 +188,7 @@ class Board:
             elif self.check_for_vert_ambig(new_i, j):
                 new_move = "R" + f"{i + 1}" + new_move[1:]
 
-            self.moves.add(new_move)
+            self.moves[new_move] = (i, j)
 
             if new_move[1] == "x":
                 break
@@ -206,7 +210,7 @@ class Board:
             elif self.check_for_vert_ambig(i, new_j):
                 new_move = "R" + f"{i + 1}" + new_move[1:]
 
-            self.moves.add(new_move)
+            self.moves[new_move] = (i, j)
 
             if new_move[1] == "x":
                 break
@@ -228,7 +232,7 @@ class Board:
             elif self.check_for_vert_ambig(i, new_j):
                 new_move = "R" + f"{i + 1}" + new_move[1:]
 
-            self.moves.add(new_move)
+            self.moves[new_move] = (i, j)
 
             if new_move[1] == "x":
                 break
@@ -343,37 +347,18 @@ class Board:
             new_i = int(move[-1]) - 1
             new_j = rev_move_map[(move[-2])]
             self.game_state[new_i][new_j] = "wr"
-            prev_i, prev_j = self.find_old_rook(move)
+            prev_i, prev_j = self.moves[move]
             self.game_state[prev_i][prev_j] = ""
             
         else:
             new_i = int(move[-1]) - 1
             new_j = rev_move_map[(move[-2])]
             self.game_state[new_i][new_j] = "br"
-            prev_i, prev_j = self.find_old_rook(move)
+            prev_i, prev_j = self.moves[move]
             self.game_state[prev_i][prev_j] = ""
 
-    def find_old_rook(self, move):
-        i = int(move[-1]) - 1
-        j = rev_move_map[(move[-2])]
-        rook_locs = {"wr":[], "br":[]}
-        for old_i in range(i + 1, 8):
-            if self.game_state[old_i][j] and self.game_state[old_i][j] == "wr":
-                rook_locs["wr"] = rook_locs["wr"].append((i, j))
-            elif  self.game_state[old_i][j] and self.game_state[old_i][j] == "br":
-                rook_locs["br"] = rook_locs["br"].append((i, j))
-            elif self.game_state[old_i][j]:
-                break
-        for old_i in range(i - 1, -1, -1):
-            if self.game_state[old_i][j] and self.game_state[old_i][j] == "wr":
-                rook_locs["wr"] = rook_locs["wr"].append((i, j))
-            elif  self.game_state[old_i][j] and self.game_state[old_i][j] == "br":
-                rook_locs["br"] = rook_locs["br"].append((i, j))
-            elif self.game_state[old_i][j]:
-                break
-       
     def print_moves(self):
-        print(self.moves)
+        print(self.moves.keys())
 
     def __str__(self):
         ret = ""
