@@ -35,8 +35,8 @@ class Board:
             ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["", "", "", "", "", "", "", ""],
-            ["", "", "", "", "", "", "", ""],
-            ["", "", "", "", "", "", "", ""],
+            ["", "wk", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "bk", ""],
             ["", "", "", "", "", "", "", ""],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
@@ -53,11 +53,15 @@ class Board:
                         self.calculate_pawn_moves(i, j)
                     if self.game_state[i][j] == "wr":
                         self.calculate_rook_moves(i, j)
+                    if self.game_state[i][j] == "wk":
+                        self.calculate_king_moves(i, j)
                 else:
                     if self.game_state[i][j] == "bp":
                         self.calculate_pawn_moves(i, j)
                     if self.game_state[i][j] == "br":
                         self.calculate_rook_moves(i, j)
+                    if self.game_state[i][j] == "bk":
+                        self.calculate_king_moves(i, j)
         
         self.add_pawn_promotion()
         self.check_moves()
@@ -273,13 +277,79 @@ class Board:
         else:
             return False
 
+    def calculate_king_moves(self, i, j):
+        if i + 1 < 8 and j - 1 > -1:
+            if self.game_state[i + 1][j - 1]:
+                if (self.game_state[i + 1][j - 1][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i + 1][j - 1][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j - 1]}{i + 2}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j - 1]}{i + 2}"] = (i, j)
+
+        if i + 1 < 8:
+            if self.game_state[i + 1][j]:
+                if (self.game_state[i + 1][j][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i + 1][j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j]}{i + 2}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j]}{i + 2}"] = (i, j)
+
+        if i + 1 < 8 and j + 1 < 8:
+            if self.game_state[i + 1][j + 1]:
+                if (self.game_state[i + 1][j + 1][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i + 1][j + 1][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j + 1]}{i + 2}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j + 1]}{i + 2}"] = (i, j)
+
+        if j - 1 > - 1:
+            if self.game_state[i][j - 1]:
+                if (self.game_state[i][j - 1][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i][j - 1][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j - 1]}{i + 1}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j - 1]}{i + 1}"] = (i, j)
+
+        if j + 1 < 8:
+            if self.game_state[i][j + 1]:
+                if (self.game_state[i][j + 1][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i][j + 1][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j + 1]}{i + 1}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j + 1]}{i + 1}"] = (i, j)
+
+        if i - 1 > -1 and j - 1 > -1:
+            if self.game_state[i - 1][j - 1]:
+                if (self.game_state[i - 1][j - 1][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i - 1][j - 1][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j - 1]}{i}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j - 1]}{i}"] = (i, j)
+
+        if i - 1 > -1:
+            if self.game_state[i - 1][j]:
+                if (self.game_state[i - 1][j][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i - 1][j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j]}{i}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j]}{i}"] = (i, j)
+
+        if i - 1 > -1 and j + 1 < 8:
+            if self.game_state[i - 1][j + 1]:
+                if (self.game_state[i - 1][j + 1][0] == "b" and self.white_to_play) or \
+                   (self.game_state[i - 1][j + 1][0] == "w" and not self.white_to_play):
+                    self.moves[f"Kx{move_map[j + 1]}{i}"] = (i, j)
+            else:
+                self.moves[f"K{move_map[j + 1]}{i}"] = (i, j)
+
     def make_move(self, move):
         if move in self.moves:
             if move[0] in rev_move_map:
                 self.make_pawn_move(move)
-            
             elif move[0] == "R":
                 self.make_rook_move(move)
+            elif move[0] == "K":
+                self.make_king_move(move)
 
             self.prev_move = move
             return True
@@ -356,6 +426,16 @@ class Board:
             self.game_state[new_i][new_j] = "br"
             prev_i, prev_j = self.moves[move]
             self.game_state[prev_i][prev_j] = ""
+
+    def make_king_move(self, move):
+        i, j = self.moves[move]
+        new_i = int(move[-1]) - 1
+        new_j = rev_move_map[move[-2]]
+        self.game_state[i][j] = ""
+        if self.white_to_play:
+            self.game_state[new_i][new_j] = "wk"
+        else:
+            self.game_state[new_i][new_j] = "bk"
 
     def print_moves(self):
         print(self.moves.keys())
