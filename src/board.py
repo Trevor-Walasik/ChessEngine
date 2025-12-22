@@ -280,10 +280,10 @@ class Board:
             if self.game_state[new_i][new_j]:
                 if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
                    or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
-                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                    self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
                 break
             else:
-                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
                 new_i += 1
                 new_j += 1
 
@@ -293,10 +293,10 @@ class Board:
             if self.game_state[new_i][new_j]:
                 if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
                    or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
-                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                    self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
                 break
             else:
-                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
                 new_i += 1
                 new_j -= 1
 
@@ -306,10 +306,10 @@ class Board:
             if self.game_state[new_i][new_j]:
                 if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
                    or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
-                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                    self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
                 break
             else:
-                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
                 new_i -= 1
                 new_j += 1
 
@@ -319,10 +319,10 @@ class Board:
             if self.game_state[new_i][new_j]:
                 if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
                    or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
-                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                    self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}x{move_map[new_j]}{new_i + 1}"] = (i, j)
                 break
             else:
-                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                self.moves[f"B{self.find_bishop_ambig(i, j, new_i, new_j)}{move_map[new_j]}{new_i + 1}"] = (i, j)
                 new_i -= 1
                 new_j -= 1
 
@@ -347,6 +347,70 @@ class Board:
             if self.game_state[new_i][j]:
                 pieces_attacking_new.add((new_i, j))
                 break
+
+        pieces_attacking_new.remove((orig_i, orig_j))
+
+        general_ambig = False
+        vert_ambig = False
+        horz_ambig = False
+
+        for temp_i, temp_j in pieces_attacking_new:
+            if self.game_state[temp_i][temp_j] == self.game_state[orig_i][orig_j]:
+                general_ambig = True
+                if temp_j == orig_j:
+                    vert_ambig = True
+                if temp_i == orig_i:
+                    horz_ambig = True
+
+        if vert_ambig and horz_ambig:
+            return f"{move_map[orig_j]}{orig_i + 1}"
+        elif horz_ambig:
+            return f"{move_map[orig_j]}"
+        elif vert_ambig:
+            return f"{orig_i + 1}"
+        elif general_ambig:
+            return f"{move_map[orig_j]}"
+        else:
+            return ""
+
+    def find_bishop_ambig(self, orig_i, orig_j, new_i, new_j):
+        pieces_attacking_new = set()
+
+        i = new_i + 1
+        j = new_j + 1
+        while i < 8 and j < 8:
+            if self.game_state[i][j]:
+                pieces_attacking_new.add((i, j))
+                break
+            i += 1    
+            j += 1
+
+        i = new_i + 1
+        j = new_j - 1
+        while i < 8 and j > -1:
+            if self.game_state[i][j]:
+                pieces_attacking_new.add((i, j))
+                break
+            i += 1
+            j -= 1
+
+        i = new_i - 1
+        j = new_j + 1
+        while i > -1 and j < 8:
+            if self.game_state[i][j]:
+                pieces_attacking_new.add((i, j))
+                break
+            i -= 1
+            j += 1
+
+        i = new_i - 1
+        j = new_j - 1
+        while i > -1 and j > -1:
+            if self.game_state[i][j]:
+                pieces_attacking_new.add((i, j))
+                break
+            i -= 1
+            j -= 1
 
         pieces_attacking_new.remove((orig_i, orig_j))
 
