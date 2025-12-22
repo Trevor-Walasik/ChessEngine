@@ -35,8 +35,8 @@ class Board:
             ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["", "", "", "", "", "", "", ""],
-            ["", "wk", "", "", "", "", "", ""],
-            ["", "", "", "", "", "", "bk", ""],
+            ["", "", "", "", "", "", "", ""],
+            ["", "", "", "", "", "", "", ""],
             ["", "", "", "", "", "", "", ""],
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
@@ -55,6 +55,8 @@ class Board:
                         self.calculate_rook_moves(i, j)
                     if self.game_state[i][j] == "wk":
                         self.calculate_king_moves(i, j)
+                    if self.game_state[i][j] == "wb":
+                        self.calculate_bishop_moves(i,j)
                 else:
                     if self.game_state[i][j] == "bp":
                         self.calculate_pawn_moves(i, j)
@@ -62,6 +64,8 @@ class Board:
                         self.calculate_rook_moves(i, j)
                     if self.game_state[i][j] == "bk":
                         self.calculate_king_moves(i, j)
+                    if self.game_state[i][j] == "bb":
+                        self.calculate_bishop_moves(i,j)
         
         self.add_pawn_promotion()
         self.check_moves()
@@ -148,118 +152,45 @@ class Board:
                 if self.prev_move[1] == "4" and j + 1 < 8 and \
                    rev_move_map[self.prev_move[0]] == j + 1:
                     self.moves[f"{move_map[j]}x{move_map[j + 1]}{i}"] = (i, j)
-
+   
     def calculate_rook_moves(self, i, j):
-        new_move = ""
         for new_i in range(i + 1, 8):
             if self.game_state[new_i][j]:
                 if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
                     self.game_state[new_i][j][0] == "w" and not self.white_to_play:
-                    new_move = f"Rx{move_map[j]}{new_i + 1}"
-                else:
-                    break
-
-            else:
-                new_move = f"R{move_map[j]}{new_i + 1}"
-
-            if self.check_for_horz_ambig(new_i, j) and self.check_for_vert_ambig(new_i, j):
-                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
-            elif self.check_for_horz_ambig(new_i, j):
-                new_move = "R" + f"{move_map[j]}" + new_move[1:]
-            elif self.check_for_vert_ambig(new_i, j):
-                new_move = "R" + f"{i + 1}" + new_move[1:]
-
-            self.moves[new_move] = (i, j)
-
-            if new_move[1] == "x":
+                    self.moves[f"R{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"] = (i, j)
                 break
+            else:
+                self.moves[f"R{self.find_rook_ambig(i, j, new_i, j)}{move_map[j]}{new_i + 1}"] = (i, j)
 
         for new_i in range(i - 1, -1, -1):
             if self.game_state[new_i][j]:
                 if self.game_state[new_i][j][0] == "b" and self.white_to_play or \
                     self.game_state[new_i][j][0] == "w" and not self.white_to_play:
-                    new_move = f"Rx{move_map[j]}{new_i + 1}"
-                else:
-                    break
-
-            else:
-                new_move = f"R{move_map[j]}{new_i + 1}"
-
-            if self.check_for_horz_ambig(new_i, j) and self.check_for_vert_ambig(new_i, j):
-                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
-            elif self.check_for_horz_ambig(new_i, j):
-                new_move = "R" + f"{move_map[j]}" + new_move[1:]
-            elif self.check_for_vert_ambig(new_i, j):
-                new_move = "R" + f"{i + 1}" + new_move[1:]
-
-            self.moves[new_move] = (i, j)
-
-            if new_move[1] == "x":
+                    self.moves[f"R{self.find_rook_ambig(i, j, new_i, j)}x{move_map[j]}{new_i + 1}"]
                 break
+            else:
+                self.moves[f"R{self.find_rook_ambig(i, j, new_i, j)}{move_map[j]}{new_i + 1}"] = (i, j)
 
         for new_j in range(j + 1, 8):
             if self.game_state[i][new_j]:
                 if self.game_state[i][new_j][0] == "b" and self.white_to_play or \
                 self.game_state[i][new_j][0] == "w" and not self.white_to_play:
-                    new_move = f"Rx{move_map[new_j]}{i + 1}"
-                else:
-                    break
-            else:
-                new_move = f"R{move_map[new_j]}{i + 1}"
-
-            if self.check_for_horz_ambig(i, new_j) and self.check_for_vert_ambig(i, new_j):
-                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
-            elif self.check_for_horz_ambig(i, new_j):
-                new_move = "R" + f"{move_map[j]}" + new_move[1:]
-            elif self.check_for_vert_ambig(i, new_j):
-                new_move = "R" + f"{i + 1}" + new_move[1:]
-
-            self.moves[new_move] = (i, j)
-
-            if new_move[1] == "x":
+                    self.moves[f"R{self.find_rook_ambig(i, j, i, new_j)}x{move_map[new_j]}{i + 1}"] = (i, j)  
                 break
+            else:
+                self.moves[f"R{self.find_rook_ambig(i, j, i, new_j)}{move_map[new_j]}{i + 1}"] = (i, j)
 
         for new_j in range(j - 1, -1, -1):
             if self.game_state[i][new_j]:
                 if self.game_state[i][new_j][0] == "b" and self.white_to_play or \
                 self.game_state[i][new_j][0] == "w" and not self.white_to_play:
-                    new_move = f"Rx{move_map[new_j]}{i + 1}"
-                else:
-                    break
+                    self.moves[f"R{self.find_rook_ambig(i, j, i, new_j)}x{move_map[new_j]}{i + 1}"] = (i, j)
+                break
             else:
-                new_move = f"R{move_map[new_j]}{i + 1}"
+                self.moves[f"R{self.find_rook_ambig(i, j, i, new_j)}{move_map[new_j]}{i + 1}"] = (i, j)
 
-            if self.check_for_horz_ambig(i, new_j) and self.check_for_vert_ambig(i, new_j):
-                new_move = "R" + f"{move_map[j]}{i + 1}" + new_move[1:]
-            elif self.check_for_horz_ambig(i, new_j):
-                new_move = "R" + f"{move_map[j]}" + new_move[1:]
-            elif self.check_for_vert_ambig(i, new_j):
-                new_move = "R" + f"{i + 1}" + new_move[1:]
 
-            self.moves[new_move] = (i, j)
-
-            if new_move[1] == "x":
-                break
-
-    def check_for_vert_ambig(self, i, j):
-        a1 = ""
-        a2 = ""
-        for new_i in range(i + 1, 8):
-            if self.game_state[new_i][j]:
-                a1 = self.game_state[new_i][j]
-                break
-
-        for new_i in range(i - 1, -1, -1):
-            if self.game_state[new_i][j]:
-                a2 = self.game_state[new_i][j]
-                break
-
-        if a1 == a2 and (a1 == "wr" or a1 == "br"):
-            return True
-        else:
-            return False
-
-    def check_for_horz_ambig(self, i, j):
         a1 = ""
         a2 = ""
         for new_j in range(j + 1, 8):
@@ -342,6 +273,106 @@ class Board:
             else:
                 self.moves[f"K{move_map[j + 1]}{i}"] = (i, j)
 
+    def calculate_bishop_moves(self, i, j):
+        new_i = i + 1
+        new_j = j + 1
+        while new_i < 8 and new_j < 8:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i += 1
+                new_j += 1
+
+        new_i = i + 1
+        new_j = j - 1
+        while new_i < 8 and new_j > -1:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i += 1
+                new_j -= 1
+
+        new_i = i - 1
+        new_j = j + 1
+        while new_i > -1 and new_j < 8:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i -= 1
+                new_j += 1
+
+        new_i = i - 1
+        new_j = j - 1
+        while new_i > -1 and new_j > -1:
+            if self.game_state[new_i][new_j]:
+                if (self.game_state[new_i][new_j][0] == "b" and self.white_to_play) \
+                   or (self.game_state[new_i][new_j][0] == "w" and not self.white_to_play):
+                    self.moves[f"Bx{move_map[new_j]}{new_i + 1}"] = (i, j)
+                break
+            else:
+                self.moves[f"B{move_map[new_j]}{new_i + 1}"] = (i, j)
+                new_i -= 1
+                new_j -= 1
+
+    def find_rook_ambig(self, orig_i, orig_j, new_i, new_j):
+        pieces_attacking_new = set()
+        for i in range(new_i + 1, 8):
+            if self.game_state[i][new_j]:
+                pieces_attacking_new.add((i, new_j))
+                break
+
+        for i in range(new_i - 1, -1, -1):
+            if self.game_state[i][new_j]:
+                pieces_attacking_new.add((i, new_j))
+                break
+
+        for j in range(new_j + 1, 8):
+            if self.game_state[new_i][j]:
+                pieces_attacking_new.add((new_i, j))
+                break
+
+        for j in range(new_j - 1, -1, -1):
+            if self.game_state[new_i][j]:
+                pieces_attacking_new.add((new_i, j))
+                break
+
+        pieces_attacking_new.remove((orig_i, orig_j))
+
+        general_ambig = False
+        vert_ambig = False
+        horz_ambig = False
+
+        for temp_i, temp_j in pieces_attacking_new:
+            if self.game_state[temp_i][temp_j] == self.game_state[orig_i][orig_j]:
+                general_ambig = True
+                if temp_j == orig_j:
+                    vert_ambig = True
+                if temp_i == orig_i:
+                    horz_ambig = True
+
+        if vert_ambig and horz_ambig:
+            return f"{move_map[orig_j]}{orig_i + 1}"
+        elif horz_ambig:
+            return f"{move_map[orig_j]}"
+        elif vert_ambig:
+            return f"{orig_i + 1}"
+        elif general_ambig:
+            return f"{move_map[orig_j]}"
+        else:
+            return ""
+
     def make_move(self, move):
         if move in self.moves:
             if move[0] in rev_move_map:
@@ -350,6 +381,8 @@ class Board:
                 self.make_rook_move(move)
             elif move[0] == "K":
                 self.make_king_move(move)
+            elif move[0] == "B":
+                self.make_bishop_move(move)
 
             self.prev_move = move
             return True
@@ -413,19 +446,14 @@ class Board:
                     self.game_state[new_i + 1][prev_j] = ""
 
     def make_rook_move(self, move):
+        i, j = self.moves[move]
+        new_i = int(move[-1]) - 1
+        new_j = rev_move_map[move[-2]]
+        self.game_state[i][j] = ""
         if self.white_to_play:
-            new_i = int(move[-1]) - 1
-            new_j = rev_move_map[(move[-2])]
             self.game_state[new_i][new_j] = "wr"
-            prev_i, prev_j = self.moves[move]
-            self.game_state[prev_i][prev_j] = ""
-            
         else:
-            new_i = int(move[-1]) - 1
-            new_j = rev_move_map[(move[-2])]
             self.game_state[new_i][new_j] = "br"
-            prev_i, prev_j = self.moves[move]
-            self.game_state[prev_i][prev_j] = ""
 
     def make_king_move(self, move):
         i, j = self.moves[move]
@@ -436,6 +464,16 @@ class Board:
             self.game_state[new_i][new_j] = "wk"
         else:
             self.game_state[new_i][new_j] = "bk"
+
+    def make_bishop_move(self, move):
+        i, j = self.moves[move]
+        new_i = int(move[-1]) - 1
+        new_j = rev_move_map[move[-2]]
+        self.game_state[i][j] = ""
+        if self.white_to_play:
+            self.game_state[new_i][new_j] = "wb"
+        else:
+            self.game_state[new_i][new_j] = "bb"
 
     def print_moves(self):
         print(self.moves.keys())
