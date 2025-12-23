@@ -1,4 +1,6 @@
 import copy
+import random
+import time
 
 move_map = {
     0:"a",
@@ -31,7 +33,11 @@ class Board:
         self.black_castle_long_rights = True
         self.black_castle_short_rights = True
         self.white_to_play = True
-        self.score = 0
+        self.white_wins = False
+        self.black_wins = False
+        self.draw = False
+        self.positions = {}
+        self.move_rule = 0
 
         self.game_state = [
             ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"],
@@ -43,6 +49,24 @@ class Board:
             ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
         ]
+
+    def game_loop(self):
+        game_state_tuple = tuple(tuple(x) for x in self.game_state)
+        self.positions[game_state_tuple] = 1 + self.positions.get(game_state_tuple, 0)
+        if self.positions[game_state_tuple] == 3 or self.move_rule == 50:
+            self.draw = True
+            return False
+        self.legal_moves()
+        if not self.moves:
+            if self.prev_move[-1] == "#":
+                self.white_wins = not self.white_to_play
+                self.black_wins = self.white_to_play
+                return False
+            else:
+                self.draw = True
+        print(self)
+        print(list(self.moves.keys()))
+        return True
 
     def legal_moves(self):
         self.potential_moves()
@@ -133,6 +157,8 @@ class Board:
             temp_board.potential_moves()
 
             for pot_move in temp_board.moves:
+                if "=" in pot_move:
+                    pot_move = pot_move[:-2]
                 if len(pot_move) > 2 and pot_move[-3:] == f"x{move_map[king_j]}{king_i + 1}":
                     moves_to_del.add(move)
                     break
@@ -237,11 +263,11 @@ class Board:
                 self.moves[f"{move_map[j]}x{move_map[j - 1]}{i + 2}"] = (i, j)
             
             if i == 4:
-                if self.prev_move[1] == "5" and j - 1 > -1 and \
+                if self.prev_move[0] in rev_move_map and self.prev_move[1] == "5" and j - 1 > -1 and \
                    rev_move_map[self.prev_move[0]] == j - 1:
                     self.moves[f"{move_map[j]}x{move_map[j - 1]}{i + 2}"] = (i, j)
 
-                if self.prev_move[1] == "5" and j + 1 < 8 and \
+                if self.prev_move[0] in rev_move_map and self.prev_move[1] == "5" and j + 1 < 8 and \
                    rev_move_map[self.prev_move[0]] == j + 1:
                     self.moves[f"{move_map[j]}x{move_map[j + 1]}{i + 2}"] = (i, j)
                     
@@ -263,11 +289,11 @@ class Board:
                 self.moves[f"{move_map[j]}x{move_map[j - 1]}{i}"] = (i, j)
 
             if i == 3:
-                if self.prev_move[1] == "4" and j - 1 > -1 and \
+                if self.prev_move[0] in rev_move_map and self.prev_move[1] == "4" and j - 1 > -1 and \
                    rev_move_map[self.prev_move[0]] == j - 1:
                     self.moves[f"{move_map[j]}x{move_map[j - 1]}{i}"] = (i, j)
 
-                if self.prev_move[1] == "4" and j + 1 < 8 and \
+                if self.prev_move[0] in rev_move_map and self.prev_move[1] == "4" and j + 1 < 8 and \
                    rev_move_map[self.prev_move[0]] == j + 1:
                     self.moves[f"{move_map[j]}x{move_map[j + 1]}{i}"] = (i, j)
    
@@ -858,6 +884,11 @@ class Board:
             elif move[0] == "O":
                 self.make_castle(move)
 
+            if "x" in move or move[0] in rev_move_map:
+                self.move_rule = 0
+            else:
+                self.move_rule += 1 
+
             self.prev_move = move
             return True
         else:
@@ -925,12 +956,12 @@ class Board:
 
     def make_rook_move(self, move):
         if move[-1] in "+#":
-            move = move[:-1]
+            move_copy = move[:-1]
         else:
             move_copy = move
         i, j = self.moves[move]
-        new_i = int(move[-1]) - 1
-        new_j = rev_move_map[move[-2]]
+        new_i = int(move_copy[-1]) - 1
+        new_j = rev_move_map[move_copy[-2]]
         self.game_state[i][j] = ""
         if self.white_to_play:
             self.game_state[new_i][new_j] = "wr"
@@ -1061,12 +1092,27 @@ class Board:
 
 if __name__ == "__main__":
     board = Board()
-    while True:
-        print(board)
-        board.legal_moves()
-        board.print_moves()
-        while True:
-            move = input("Enter move: ")
-            if board.make_move(move):
-                break
+    while board.game_loop():
+        g = input()
+
+
+    '''
+    board = Board()
+    while board.game_loop():
+        #time.sleep(.5)
+        not_found = True
+        for m in list(board.moves):
+            if m[-1] == "#":
+                board.make_move(m)
+                not_found = False
+        if not_found:
+            board.make_move(random.choice(list(board.moves)))
         board.white_to_play = not board.white_to_play
+    if board.white_wins:
+        print("White Wins")
+    elif board.black_wins:
+        print("Black Wins")
+    else:
+        print("Draw")
+
+    '''
