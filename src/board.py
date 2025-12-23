@@ -140,6 +140,53 @@ class Board:
         for move in moves_to_del:
             del self.moves[move]
 
+        self.remove_bad_castles()
+
+    def remove_bad_castles(self):
+        if self.prev_move and self.prev_move[-1] == "+":
+            if "O-O" in self.moves:
+                del self.moves["O-O"]
+            if "O-O+" in self.moves:
+                del self.moves["O-O"]
+            if "O-O-O" in self.moves:
+                del self.moves["O-O-O"]
+            if "O-O-O+" in self.moves:
+                del self.moves["O-O"]
+
+        temp_board = copy.deepcopy(self)
+        
+        if self.white_to_play:
+            temp_board.white_to_play = False
+            temp_board.potential_moves()
+            for move in temp_board.moves:
+                if move[-2:] == "f1":
+                    if "O-O" in self.moves:
+                        del self.moves["O-O"]
+                    if "O-O+" in self.moves:
+                        del self.moves["O-O"]
+
+                if move[-2:] == "c1" or move[-2:] == "d1":
+                    if "O-O-O" in self.moves:
+                        del self.moves["O-O-O"]
+                    if "O-O-O+" in self.moves:
+                        del self.moves["O-O"]
+
+        else:
+            temp_board.white_to_play = True
+            temp_board.potential_moves()
+            for move in temp_board.moves:
+                if move[-2:] == "f8":
+                    if "O-O" in self.moves:
+                        del self.moves["O-O"]
+                    if "O-O+" in self.moves:
+                        del self.moves["O-O"]
+
+                if move[-2:] == "c8" or move[-2:] == "d8":
+                    if "O-O-O" in self.moves:
+                        del self.moves["O-O-O"]
+                    if "O-O-O+" in self.moves:
+                        del self.moves["O-O"]
+
     # See which moves result in checks and add + if they do
     def add_checks(self):
         changes = {}
