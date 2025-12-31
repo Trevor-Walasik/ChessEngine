@@ -24,6 +24,19 @@ rev_move_map = {
     "h":7
 }
 
+piece_score_map = {
+    "wp":1,
+    "wb":3.2,
+    "wn":3,
+    "wr":5,
+    "wq":9,
+    "bp":-1,
+    "bb":-3.2,
+    "bn":-3,
+    "br":-5,
+    "bq":-9
+}
+
 class Board:
     # Initialize Board object with fresh game state
     def __init__(self):
@@ -38,6 +51,7 @@ class Board:
         self.draw = False
         self.positions = {}
         self.move_rule = 0
+        self.score = 0
 
         self.game_state = [
             ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"],
@@ -50,7 +64,8 @@ class Board:
             ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
         ]
 
-    def game_loop(self):
+    def game_loop(self, print_game = True):
+        self.calculate_score()
         game_state_tuple = tuple(tuple(x) for x in self.game_state)
         self.positions[game_state_tuple] = 1 + self.positions.get(game_state_tuple, 0)
         if self.positions[game_state_tuple] == 3 or self.move_rule == 50:
@@ -61,17 +76,24 @@ class Board:
             if self.prev_move[-1] == "#":
                 self.white_wins = not self.white_to_play
                 self.black_wins = self.white_to_play
-                return False
             else:
                 self.draw = True
-        print(self)
-        print(list(self.moves.keys()))
+            return False
+        if print_game:
+            print(self)
+            print(list(self.moves.keys()))
         return True
 
     def legal_moves(self):
         self.potential_moves()
         self.check_legality()
         self.add_checks()
+
+    def calculate_score(self):
+        for i in range(8):
+            for j in range(8):
+                if self.game_state[i][j]:
+                    self.score = self.score + piece_score_map.get(self.game_state[i][j], 0)
 
     # Update and return self.moves set with all legal moves from current position
     def potential_moves(self):
@@ -1100,14 +1122,7 @@ if __name__ == "__main__":
     board = Board()
     while board.game_loop():
         #time.sleep(.5)
-        not_found = True
-        for m in list(board.moves):
-            if m[-1] == "#":
-                board.make_move(m)
-                not_found = False
-        if not_found:
-            board.make_move(random.choice(list(board.moves)))
-        board.white_to_play = not board.white_to_play
+        
     if board.white_wins:
         print("White Wins")
     elif board.black_wins:

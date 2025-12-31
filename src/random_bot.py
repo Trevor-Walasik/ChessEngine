@@ -1,10 +1,12 @@
 from board import Board
 import copy
 import time
+import random
 import tensorflow as tf
 from tensorflow.keras import layers, models
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 '''
 input layer is one-hot encoded with the following representations
@@ -19,75 +21,150 @@ input layer is one-hot encoded with the following representations
 '''
 
 mapping = {
-    "": [0, 0, 0, 0],
-    "wp": [0, 0, 0, 1],
-    "wn": [0, 0, 1, 0],
-    "wb": [0, 0, 1, 1],
-    "wr": [0, 1, 0, 0],
-    "wq": [0, 1, 0, 1],
-    "wk": [0, 1, 1, 0],
-    "bp": [1, 0, 0, 1],
-    "bn": [1, 0, 1, 0],
-    "bb": [1, 0, 1, 1],
-    "br": [1, 1, 0, 0],
-    "bq": [1, 1, 0, 1],
-    "bk": [1, 1, 1, 0],
+    "": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "wp": [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    "wn": [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    "wb": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    "wr": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "wq": [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "wk": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "bp": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    "bn": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    "bb": [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+    "br": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    "bq": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    "bk": [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
 }
-
-def tensor_to_hueristic(tens, white):
-    tens = tens.numpy()
-    if white:
-        return tens[0][0] - tens[0][2]
-    else:
-        return tens[0][2] - tens[0][0]
-
 
 def board_to_input_array(game_state):
     layer = []
     for i in range(8):
         for j in range(8):
             layer.extend(mapping[game_state[i][j]])
-    return layer
+    return layer 
 
-def simulate_game(model, sleep_time = None):
-    board = Board()
+def simulate_game(model, sleep_time=None, extract_training=False, print_game=False, number_of_games=1):
+    # Plan
+    # Initialize return values for extract_training
+    if extract_training:
+        inputs = []
+        outputs = []
+        
 
-    while board.game_loop():
-        best_move = None
-        best_move_val = -1
-        for move in board.moves:
-            if move[-1] == "#":
-                best_move = move
-                break
+    for i in range(number_of_games):
+        score = []
+        board = Board()
+        while board.game_loop(print_game = print_game):
+            if board.white_to_play:
+                moves = []
+                activations = []
+                move_inputs = []
 
-            temp_board = copy.deepcopy(board)
+                for m in board.moves:
+                    if m[-1] == "#":
+                        activations.append(float(1000000))
+                        move_input = board_to_input_array(board.game_state)
+                    else:
+                        temp = copy.deepcopy(board)
+                        temp.make_move(m)
+                        move_input = board_to_input_array(temp.game_state)
+                        input_arr = np.array(move_input)
+                        input_arr = np.expand_dims(input_arr, axis=0)
+                        activation = model(input_arr, training=False)
+                        activations.append(float(activation.numpy().flatten()[0]))
+                    moves.append(m)
+                    move_inputs.append(move_input)
 
-            temp_board.make_move(move)
-            input = board_to_input_array(temp_board.game_state)
-            input = tf.expand_dims(input, axis=0)
+                tensor_input = tf.convert_to_tensor(np.array(activations))
+                softmax_output = tf.nn.softmax(tensor_input)
+                probs = np.array(softmax_output).flatten()
+                chosen_index = np.random.choice(len(moves), p=probs)
 
-            huer = tensor_to_hueristic(model(np.array(input), training = False), board.white_to_play)
-            if huer > best_move_val:    
-                best_move_val = huer
-                best_move = move
+                board.make_move(moves[chosen_index])
+                if extract_training:
+                    inputs.append(move_inputs[chosen_index])
+                    score.append(board.score)
+                board.white_to_play = not board.white_to_play
 
-        board.make_move(best_move)
-        board.white_to_play = not board.white_to_play
-        if sleep_time:
-            time.sleep(sleep_time)
+            else:
+                not_found = True
+                for m in list(board.moves):
+                    if m[-1] == "#":
+                        board.make_move(m)
+                        not_found = False
+                if not_found:
+                    board.make_move(random.choice(list(board.moves)))
+                board.white_to_play = not board.white_to_play
+        
+        if board.white_wins:
+            print("White Wins")
+            game_outputs = [white_squish_function(s) for s in score]
+            outputs.extend(game_outputs)
+        elif board.black_wins:
+            print("Black Wins")
+            game_outputs = [-black_squish_function(s) for s in score]
+            outputs.extend(game_outputs)
+        else:
+            print("Draw")
+            game_outputs = [-black_squish_function(s) / 2 if s < 0 
+                            else white_squish_function(s) / 2 
+                            for s in score]
+            outputs.extend(game_outputs)
 
-    if board.white_wins:
-        print("White Wins")
-    elif board.black_wins:
-        print("Black Wins")
-    else:
-        print("Draw")
+    if extract_training:
+        print(np.array(outputs))
+        return (np.array(inputs), np.array(outputs))
+        
+
+def white_squish_function(x):
+    if x >= 12:
+        return 1
+    if x <= -12:
+        return 0
+    return 1 / (1 + np.exp(-1.5 * (x - 4.5)))
+
+def black_squish_function(x):
+    if x >= 12:
+        return 0
+    if x <= -12:
+        return 1
+    return 1 / (1 + np.exp(1.5 * (x + 4.5)))
 
 if __name__ == "__main__":
+    '''
     model = models.Sequential([
-        layers.Flatten(input_shape = (256,)),
+        layers.Flatten(input_shape = (768,)),
+        layers.Dense(768, activation = 'relu'),
+        layers.Dense(2000, activation = 'relu'),
+        layers.Dense(2000, activation = 'relu'),
+        layers.Dense(2000, activation = 'relu'),
+        layers.Dense(768, activation = 'relu'),
+        layers.Dense(256, activation = 'relu'),
         layers.Dense(128, activation = 'relu'),
         layers.Dense(64, activation = 'relu'),
-        layers.Dense(3, activation = 'softmax')
+        layers.Dense(1)
     ])
-    simulate_game(model, .5)
+    '''
+    model = tf.keras.models.load_model('model.keras')
+    for i in range(250):
+        res = simulate_game(model, extract_training = True, print_game = False, number_of_games = 12)
+        if res:
+            x_train, y_train = res
+            optimizer = tf.keras.optimizers.Adam(
+                learning_rate=0.0001,
+            )
+            model.compile(
+                optimizer=optimizer,
+                loss='mean_absolute_error',
+                metrics=['accuracy'],
+            )
+        
+            model.fit(
+                x_train, 
+                y_train, 
+                epochs=6,
+                batch_size = (len(x_train) - 1)//6
+            )   
+        model.save('model.keras')
+
+    model.save('model.keras')
