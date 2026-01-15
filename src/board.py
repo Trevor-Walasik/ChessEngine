@@ -52,6 +52,7 @@ class Board:
         self.positions = {}
         self.move_rule = 0
         self.score = 0
+        self.total_moves = 0
 
         self.game_state = [
             ["wr", "wn", "wb", "wq", "wk", "wb", "wn", "wr"],
@@ -912,6 +913,7 @@ class Board:
                 self.move_rule += 1 
 
             self.prev_move = move
+            self.total_moves += 1
             return True
         else:
             return False
@@ -1111,12 +1113,99 @@ class Board:
         for i in range(8):
             ret += f"  {move_map[i].upper()}  "
         return ret
+    
+    # Function to extract planes of input for cnn based on curren board state
+    def extract_planes(self):
+        pieces = list(piece_score_map.keys())
+        # Create list of 12 8x8 arrays of 1s and 0s representing location of 12 diffent possible chess pieces
+        board_position_planes = [[[1 if self.game_state[i][j] == p else 0 for j in range(8)] 
+                                for i in range(8)] 
+                                for p in pieces]
+
+        bools = [self.white_to_play, self.white_castle_short_rights, self.white_castle_long_rights, 
+                self.black_castle_short_rights, self.black_castle_long_rights]
+        variable_plane = [1 if b else 0 for b in bools]
+        variable_plane.append(self.move_rule)
+        variable_plane.append(self.total_moves)
+        variable_plane.append(self.positions[self.game_state])
+
+        return (board_position_planes, variable_plane)
+    
+    # This function will be used to create the list of all possible moves,
+    # this list will be used by the policy head of the CNN to create a probabillity
+    # distribution of all moves
+    def map_all_possible_moves():
+        temp = Board()
+        temp.game_state = [["" for _ in range(8)] for _ in range(8)]
+        temp.white_castle_long_rights = False
+        temp.white_castle_short_rights = False
+        temp.black_castle_long_rights = False
+        temp.black_castle_short_rights = False
+
+        ret = []
+
+        for i in range(8):
+            for j in range(8):
+                temp.game_state[i][j] = "wq"
+                temp.potential_moves()
+                for move in temp.moves:
+                    ret.append(((i, j), (int(move[-1]) - 1, rev_move_map[move[-2]]), 0))
+                temp.game_state[i][j] = ""
+
+                temp.game_state[i][j] = "wn"
+                temp.potential_moves()
+                for move in temp.moves:
+                    ret.append(((i, j), (int(move[-1]) - 1, rev_move_map[move[-2]]), 0))
+                temp.game_state[i][j] = ""
+
+        encoding_map = {
+            "Q":1,
+            "R":2,
+            "B":3,
+            "N":4
+        }
+
+        for j in range(8):
+            if j > 0:
+                temp.game_state[7][j - 1] = "bp"
+            if j < 7:
+                temp.game_state[7][j + 1] = "bp"
+            temp.game_state[6][j] = "wp"
+            temp.potential_moves()
+            for move in temp.moves:
+                ret.append(((6, j), (int(move[-3]) - 1, rev_move_map[move[-4]]), encoding_map[move[-1]]))
+            if j > 0:
+                temp.game_state[7][j - 1] = ""
+            if j < 7:
+                temp.game_state[7][j + 1] = ""
+            temp.game_state[6][j] = ""
+
+        temp.white_to_play = False
+        for j in range(8):
+            if j > 0:
+                temp.game_state[0][j - 1] = "wp"
+            if j < 7:
+                temp.game_state[0][j + 1] = "wp"
+            temp.game_state[1][j] = "bp"
+            temp.potential_moves()
+            for move in temp.moves:
+                ret.append(((1, j), (int(move[-3]) - 1, rev_move_map[move[-4]]), encoding_map[move[-1]]))
+            if j > 0:
+                temp.game_state[0][j - 1] = ""
+            if j < 7:
+                temp.game_state[0][j + 1] = ""
+            temp.game_state[1][j] = ""
+
+        ret.append(((0, 4), (0, 6), 5))
+        ret.append(((0, 4), (0, 2), 6))
+        ret.append(((7, 4), (7, 6), 7))
+        ret.append(((7, 4), (7, 2), 8))
+        return ret
 
 if __name__ == "__main__":
     board = Board()
     while board.game_loop():
         g = input()
-
 
     '''
     board = Board()
